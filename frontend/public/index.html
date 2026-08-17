@@ -13,7 +13,13 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .live-pulse { animation: pulse 2s infinite; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.5s ease-out; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
+        .search-glow:focus { box-shadow: 0 0 0 3px rgba(59,130,246,0.3); }
+        .tab-active { color: white; background: #3b82f6; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .tab-inactive { color: #64748b; background: transparent; }
+        .tab-inactive:hover { color: #1e293b; background: white; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
@@ -31,19 +37,19 @@
                         <p class="text-xs text-gray-500">IoT Environmental Monitoring System</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <nav class="hidden sm:flex items-center gap-1 bg-slate-100 rounded-xl p-1">
-                        <a href="index.html" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg shadow-sm">IoT Dashboard</a>
-                        <a href="weather.html" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-all">Weather Lookup</a>
+                <div class="flex items-center gap-3">
+                    <nav class="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+                        <button onclick="switchTab('iot')" id="tabIot" class="px-4 py-2 text-sm font-medium rounded-lg transition-all tab-active">IoT Dashboard</button>
+                        <button onclick="switchTab('weather')" id="tabWeather" class="px-4 py-2 text-sm font-medium rounded-lg transition-all tab-inactive">Weather Lookup</button>
                     </nav>
-                    <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 bg-slate-100 px-3 py-1.5 rounded-lg" id="stationBadge">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
                         Station: ST-01
                     </div>
-                    <div class="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
+                    <div class="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium" id="liveBadge">
                         <span class="w-2 h-2 bg-green-500 rounded-full live-pulse"></span>
                         Live
                     </div>
@@ -52,62 +58,213 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-        <div id="alert-panel"></div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="gauge-cards"></div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Sensor Readings Over Time</h3>
-                <div style="height: 220px;"><canvas id="mainChart"></canvas></div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Water Quality History</h3>
-                <div style="height: 220px;"><canvas id="waterChart"></canvas></div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                    <h4 class="font-semibold text-gray-700">System Uptime</h4>
+    <!-- ==================== IOT DASHBOARD TAB ==================== -->
+    <div id="iotTab">
+        <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+            <div id="alert-panel"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="gauge-cards"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Sensor Readings Over Time</h3>
+                    <div style="height: 220px;"><canvas id="mainChart"></canvas></div>
                 </div>
-                <p class="text-2xl font-bold text-gray-900" id="uptime">99.9%</p>
-                <p class="text-sm text-gray-500 mt-1">Last 30 days</p>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                    <h4 class="font-semibold text-gray-700">Data Points</h4>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Water Quality History</h3>
+                    <div style="height: 220px;"><canvas id="waterChart"></canvas></div>
                 </div>
-                <p class="text-2xl font-bold text-gray-900" id="dataPoints">0</p>
-                <p class="text-sm text-gray-500 mt-1">Collected today</p>
             </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                        <h4 class="font-semibold text-gray-700">System Uptime</h4>
                     </div>
-                    <h4 class="font-semibold text-gray-700">Update Interval</h4>
+                    <p class="text-2xl font-bold text-gray-900" id="uptime">99.9%</p>
+                    <p class="text-sm text-gray-500 mt-1">Last 30 days</p>
                 </div>
-                <p class="text-2xl font-bold text-gray-900">30s</p>
-                <p class="text-sm text-gray-500 mt-1">Real-time sync</p>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h4 class="font-semibold text-gray-700">Data Points</h4>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900" id="dataPoints">0</p>
+                    <p class="text-sm text-gray-500 mt-1">Collected today</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h4 class="font-semibold text-gray-700">Update Interval</h4>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900">30s</p>
+                    <p class="text-sm text-gray-500 mt-1">Real-time sync</p>
+                </div>
             </div>
-        </div>
+        </main>
+    </div>
 
-        <footer class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <!-- ==================== WEATHER LOOKUP TAB ==================== -->
+    <div id="weatherTab" class="hidden">
+        <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+            <!-- SEARCH -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 fade-in">
+                <h2 class="text-lg font-semibold text-gray-800 mb-1">Search Any Location</h2>
+                <p class="text-sm text-gray-500 mb-4">Enter a city name to get real-time weather and environmental data</p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1 relative">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input type="text" id="searchInput" placeholder="Search city... (e.g., Delhi, Mumbai, Varanasi)" 
+                               class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 search-glow text-gray-700"
+                               onkeydown="if(event.key==='Enter') searchLocation()">
+                    </div>
+                    <button onclick="searchLocation()" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        Search
+                    </button>
+                    <button onclick="searchMyLocation()" class="px-6 py-3 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        My Location
+                    </button>
+                </div>
+                <div id="searchError" class="hidden mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2"></div>
+            </div>
+
+            <!-- LOADING -->
+            <div id="weatherLoading" class="hidden text-center py-12">
+                <svg class="w-12 h-12 text-blue-500 mx-auto spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <p class="mt-3 text-gray-600 font-medium">Fetching environmental data...</p>
+            </div>
+
+            <!-- RESULTS -->
+            <div id="weatherResults" class="hidden space-y-6">
+                <!-- Location Header -->
+                <div class="bg-gradient-to-r from-blue-500 to-green-500 rounded-2xl p-6 text-white fade-in">
+                    <div class="flex items-center gap-3 mb-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <h2 class="text-2xl font-bold" id="locationName">--</h2>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 text-white/90">
+                        <span id="countryName" class="text-sm"></span>
+                        <span id="localTime" class="text-sm"></span>
+                        <span id="coordinates" class="text-sm font-mono"></span>
+                    </div>
+                </div>
+
+                <!-- Weather Overview -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 fade-in">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Current Weather</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <div class="text-center p-3 bg-slate-50 rounded-xl">
+                            <p class="text-3xl font-bold text-gray-900" id="temperature">--</p>
+                            <p class="text-sm text-gray-500">Temperature</p>
+                        </div>
+                        <div class="text-center p-3 bg-slate-50 rounded-xl">
+                            <p class="text-3xl font-bold text-gray-900" id="feelsLike">--</p>
+                            <p class="text-sm text-gray-500">Feels Like</p>
+                        </div>
+                        <div class="text-center p-3 bg-blue-50 rounded-xl">
+                            <p class="text-3xl font-bold text-blue-600" id="humidity">--</p>
+                            <p class="text-sm text-gray-500">Humidity</p>
+                        </div>
+                        <div class="text-center p-3 bg-slate-50 rounded-xl">
+                            <p class="text-3xl font-bold text-gray-900" id="windSpeed">--</p>
+                            <p class="text-sm text-gray-500">Wind (km/h)</p>
+                        </div>
+                        <div class="text-center p-3 bg-slate-50 rounded-xl">
+                            <p class="text-3xl font-bold text-gray-900" id="pressure">--</p>
+                            <p class="text-sm text-gray-500">Pressure</p>
+                        </div>
+                        <div class="text-center p-3 bg-slate-50 rounded-xl">
+                            <p class="text-3xl font-bold text-gray-900" id="visibility">--</p>
+                            <p class="text-sm text-gray-500">Visibility (km)</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <img id="weatherIcon" src="" alt="" class="w-12 h-12 hidden">
+                        <p class="text-gray-600" id="weatherDesc">--</p>
+                    </div>
+                </div>
+
+                <!-- Air Quality -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 fade-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Air Quality Index</h3>
+                        <span id="aqiBadge" class="px-3 py-1 rounded-full text-sm font-semibold">--</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" id="aqiCards"></div>
+                </div>
+
+                <!-- Water Quality + Chart -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 fade-in">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-1">Water Quality Estimates</h3>
+                        <p class="text-xs text-gray-400 mb-4">Based on regional water report data</p>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">💧</span>
+                                    <div><p class="font-semibold text-gray-800">pH Level</p><p class="text-xs text-gray-500">Safe: 6.5 - 8.5</p></div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-2xl font-bold text-blue-600" id="estPH">--</p>
+                                    <p class="text-xs font-medium" id="estPHStatus">--</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">🧪</span>
+                                    <div><p class="font-semibold text-gray-800">TDS (Est.)</p><p class="text-xs text-gray-500">Safe: &lt; 500 ppm</p></div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-2xl font-bold text-green-600" id="estTDS">--</p>
+                                    <p class="text-xs font-medium" id="estTDSStatus">--</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-purple-50 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">🌊</span>
+                                    <div><p class="font-semibold text-gray-800">Dissolved Oxygen</p><p class="text-xs text-gray-500">Healthy: &gt; 5 mg/L</p></div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-2xl font-bold text-purple-600" id="estDO">--</p>
+                                    <p class="text-xs font-medium" id="estDOStatus">--</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-orange-50 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">🔬</span>
+                                    <div><p class="font-semibold text-gray-800">Turbidity</p><p class="text-xs text-gray-500">WHO limit: &lt; 5 NTU</p></div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-2xl font-bold text-orange-600" id="estTurbidity">--</p>
+                                    <p class="text-xs font-medium" id="estTurbidityStatus">--</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 fade-in">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Air Pollutants Breakdown</h3>
+                        <div style="height: 260px;"><canvas id="pollutantChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Health Advisory -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 fade-in">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Health Advisory</h3>
+                    <div id="healthAdvisory" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==================== FOOTER (shared) ==================== -->
+    <footer class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                     <p class="text-gray-700 font-medium">SmartEnv - IoT Environmental Monitoring System</p>
@@ -119,219 +276,391 @@
                        class="text-blue-500 hover:text-blue-600 font-medium">GitHub</a>
                 </div>
             </div>
-        </footer>
-    </main>
+        </div>
+    </footer>
 
     <script>
-        const CONFIG = {
-            firebaseURL: 'https://smartenvironmonitor-default-rtdb.firebaseio.com',
-            stationId: 'station_01',
-            demoMode: true,
-            updateInterval: 3000
+    // =====================================================================
+    // TAB SWITCHING
+    // =====================================================================
+    function switchTab(tab) {
+        const iotTab = document.getElementById('iotTab');
+        const weatherTab = document.getElementById('weatherTab');
+        const btnIot = document.getElementById('tabIot');
+        const btnWeather = document.getElementById('tabWeather');
+        const stationBadge = document.getElementById('stationBadge');
+        const liveBadge = document.getElementById('liveBadge');
+
+        if (tab === 'iot') {
+            iotTab.classList.remove('hidden');
+            weatherTab.classList.add('hidden');
+            btnIot.className = 'px-4 py-2 text-sm font-medium rounded-lg transition-all tab-active';
+            btnWeather.className = 'px-4 py-2 text-sm font-medium rounded-lg transition-all tab-inactive';
+            stationBadge.classList.remove('hidden');
+            liveBadge.classList.remove('hidden');
+        } else {
+            iotTab.classList.add('hidden');
+            weatherTab.classList.remove('hidden');
+            btnIot.className = 'px-4 py-2 text-sm font-medium rounded-lg transition-all tab-inactive';
+            btnWeather.className = 'px-4 py-2 text-sm font-medium rounded-lg transition-all tab-active';
+            stationBadge.classList.add('hidden');
+            liveBadge.classList.add('hidden');
+        }
+    }
+
+    // =====================================================================
+    // IOT DASHBOARD
+    // =====================================================================
+    const CONFIG = {
+        firebaseURL: 'https://smartenvironmonitor-default-rtdb.firebaseio.com',
+        stationId: 'station_01',
+        demoMode: true,
+        updateInterval: 3000
+    };
+
+    let dataCount = 0;
+    const historyData = { labels: [], air: [], ph: [], tds: [] };
+
+    function getAirStatus(aqi) {
+        if (aqi <= 50) return { label: 'Good', color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' };
+        if (aqi <= 100) return { label: 'Moderate', color: 'text-yellow-600', bg: 'bg-yellow-100', border: 'border-yellow-200' };
+        if (aqi <= 200) return { label: 'Unhealthy', color: 'text-orange-600', bg: 'bg-orange-100', border: 'border-orange-200' };
+        return { label: 'Hazardous', color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200' };
+    }
+
+    function getPHStatus(ph) {
+        if (ph >= 6.5 && ph <= 8.5) return { label: 'Safe', color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' };
+        if (ph >= 5 && ph <= 9) return { label: 'Moderate', color: 'text-yellow-600', bg: 'bg-yellow-100', border: 'border-yellow-200' };
+        return { label: 'Unsafe', color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200' };
+    }
+
+    function getTDSStatus(tds) {
+        if (tds <= 300) return { label: 'Excellent', color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' };
+        if (tds <= 600) return { label: 'Good', color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-200' };
+        if (tds <= 900) return { label: 'Fair', color: 'text-yellow-600', bg: 'bg-yellow-100', border: 'border-yellow-200' };
+        return { label: 'Poor', color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200' };
+    }
+
+    function generateDemoData() {
+        const now = new Date();
+        return {
+            air_quality: Math.floor(30 + Math.random() * 70 + Math.sin(now.getHours() / 3) * 20),
+            ph: +(6.5 + Math.random() * 2 + Math.sin(now.getMinutes() / 10) * 0.5).toFixed(2),
+            tds: Math.floor(150 + Math.random() * 300 + Math.cos(now.getHours() / 4) * 50),
+            timestamp: now.getTime()
+        };
+    }
+
+    function renderGaugeCard(title, value, unit, status, icon, maxValue) {
+        const pct = Math.min((parseFloat(value) / maxValue) * 100, 100);
+        const barColor = pct < 50 ? 'bg-green-500' : pct < 75 ? 'bg-yellow-500' : 'bg-red-500';
+        return `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 ${status.bg} rounded-xl flex items-center justify-center">
+                            <span class="text-lg">${icon}</span>
+                        </div>
+                        <h3 class="text-sm font-semibold text-gray-600">${title}</h3>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${status.bg} ${status.color} ${status.border} border">${status.label}</span>
+                </div>
+                <div class="mt-2">
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-3xl font-bold text-gray-900">${value}</span>
+                        <span class="text-sm text-gray-500">${unit}</span>
+                    </div>
+                    <div class="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full ${barColor} rounded-full gauge-ring" style="width: ${pct}%"></div>
+                    </div>
+                    <div class="flex justify-between mt-1.5 text-xs text-gray-400">
+                        <span>0</span>
+                        <span>${maxValue} ${unit}</span>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function renderAlerts(data) {
+        let html = '';
+        const alerts = [];
+        if (data.air_quality > 100) alerts.push({ type: 'danger', msg: `High Air Quality Index: ${Math.round(data.air_quality)} AQI - May cause respiratory issues` });
+        if (data.ph < 6.5) alerts.push({ type: 'warning', msg: `Water too acidic: pH ${data.ph} - Below safe drinking range` });
+        if (data.ph > 8.5) alerts.push({ type: 'warning', msg: `Water too alkaline: pH ${data.ph} - Above safe drinking range` });
+        if (data.tds > 500) alerts.push({ type: 'warning', msg: `High TDS Level: ${Math.round(data.tds)} ppm - May affect taste and safety` });
+
+        if (alerts.length === 0) {
+            html = `<div class="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3 fade-in">
+                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div><p class="font-semibold text-green-800">All Systems Normal</p><p class="text-sm text-green-600">All parameters are within safe limits</p></div>
+            </div>`;
+        } else {
+            alerts.forEach(a => {
+                const colors = a.type === 'danger' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-yellow-50 border-yellow-200 text-yellow-700';
+                html += `<div class="${colors} border rounded-2xl p-4 mb-2 flex items-center gap-3 fade-in">
+                    <span class="text-lg">${a.type === 'danger' ? '🔴' : '🟡'}</span>
+                    <span class="font-medium">${a.msg}</span>
+                </div>`;
+            });
+        }
+        document.getElementById('alert-panel').innerHTML = html;
+    }
+
+    let mainChart, waterChart;
+
+    function initCharts() {
+        const commonOptions = {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 11 } } },
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } }
+            },
+            animation: { duration: 500 }
         };
 
-        let dataCount = 0;
-        const historyData = { labels: [], air: [], ph: [], tds: [] };
-
-        function getAirStatus(aqi) {
-            if (aqi <= 50) return { label: 'Good', color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200', icon: '✓' };
-            if (aqi <= 100) return { label: 'Moderate', color: 'text-yellow-600', bg: 'bg-yellow-100', border: 'border-yellow-200', icon: '⚠' };
-            if (aqi <= 200) return { label: 'Unhealthy', color: 'text-orange-600', bg: 'bg-orange-100', border: 'border-orange-200', icon: '!' };
-            return { label: 'Hazardous', color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200', icon: '☠' };
-        }
-
-        function getPHStatus(ph) {
-            if (ph >= 6.5 && ph <= 8.5) return { label: 'Safe', color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' };
-            if (ph >= 5 && ph <= 9) return { label: 'Moderate', color: 'text-yellow-600', bg: 'bg-yellow-100', border: 'border-yellow-200' };
-            return { label: 'Unsafe', color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200' };
-        }
-
-        function getTDSStatus(tds) {
-            if (tds <= 300) return { label: 'Excellent', color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' };
-            if (tds <= 600) return { label: 'Good', color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-200' };
-            if (tds <= 900) return { label: 'Fair', color: 'text-yellow-600', bg: 'bg-yellow-100', border: 'border-yellow-200' };
-            return { label: 'Poor', color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200' };
-        }
-
-        function generateDemoData() {
-            const now = new Date();
-            return {
-                air_quality: Math.floor(30 + Math.random() * 70 + Math.sin(now.getHours() / 3) * 20),
-                ph: +(6.5 + Math.random() * 2 + Math.sin(now.getMinutes() / 10) * 0.5).toFixed(2),
-                tds: Math.floor(150 + Math.random() * 300 + Math.cos(now.getHours() / 4) * 50),
-                timestamp: now.getTime()
-            };
-        }
-
-        function renderGaugeCard(title, value, unit, status, icon, maxValue) {
-            const pct = Math.min((parseFloat(value) / maxValue) * 100, 100);
-            const barColor = pct < 50 ? 'bg-green-500' : pct < 75 ? 'bg-yellow-500' : 'bg-red-500';
-            return `
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow fade-in">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 ${status.bg} rounded-xl flex items-center justify-center">
-                                <span class="text-lg">${icon}</span>
-                            </div>
-                            <h3 class="text-sm font-semibold text-gray-600">${title}</h3>
-                        </div>
-                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${status.bg} ${status.color} ${status.border} border">${status.label}</span>
-                    </div>
-                    <div class="mt-2">
-                        <div class="flex items-baseline gap-1.5">
-                            <span class="text-3xl font-bold text-gray-900">${value}</span>
-                            <span class="text-sm text-gray-500">${unit}</span>
-                        </div>
-                        <div class="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div class="h-full ${barColor} rounded-full gauge-ring" style="width: ${pct}%"></div>
-                        </div>
-                        <div class="flex justify-between mt-1.5 text-xs text-gray-400">
-                            <span>0</span>
-                            <span>${maxValue} ${unit}</span>
-                        </div>
-                    </div>
-                </div>`;
-        }
-
-        function renderAlerts(data) {
-            let html = '';
-            const alerts = [];
-            if (data.air_quality > 100) alerts.push({ type: 'danger', msg: `High Air Quality Index: ${Math.round(data.air_quality)} AQI - May cause respiratory issues` });
-            if (data.ph < 6.5) alerts.push({ type: 'warning', msg: `Water too acidic: pH ${data.ph} - Below safe drinking range` });
-            if (data.ph > 8.5) alerts.push({ type: 'warning', msg: `Water too alkaline: pH ${data.ph} - Above safe drinking range` });
-            if (data.tds > 500) alerts.push({ type: 'warning', msg: `High TDS Level: ${Math.round(data.tds)} ppm - May affect taste and safety` });
-
-            if (alerts.length === 0) {
-                html = `<div class="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3 fade-in">
-                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-green-800">All Systems Normal</p>
-                        <p class="text-sm text-green-600">All parameters are within safe limits</p>
-                    </div>
-                </div>`;
-            } else {
-                alerts.forEach(a => {
-                    const colors = a.type === 'danger' 
-                        ? 'bg-red-50 border-red-200 text-red-700' 
-                        : 'bg-yellow-50 border-yellow-200 text-yellow-700';
-                    html += `<div class="${colors} border rounded-2xl p-4 mb-2 flex items-center gap-3 fade-in">
-                        <span class="text-lg">${a.type === 'danger' ? '🔴' : '🟡'}</span>
-                        <span class="font-medium">${a.msg}</span>
-                    </div>`;
-                });
-            }
-            document.getElementById('alert-panel').innerHTML = html;
-        }
-
-        let mainChart, waterChart;
-
-        function initCharts() {
-            const commonOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 11 } } },
-                    y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } }
-                },
-                animation: { duration: 500 }
-            };
-
-            mainChart = new Chart(document.getElementById('mainChart'), {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        { label: 'Air Quality (AQI)', data: [], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
-                        { label: 'TDS (ppm)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }
-                    ]
-                },
-                options: commonOptions
-            });
-
-            waterChart = new Chart(document.getElementById('waterChart'), {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        { label: 'pH Level', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
-                        { label: 'Safe pH Range (6.5-8.5)', data: [], borderColor: 'rgba(59,130,246,0.2)', borderDash: [5, 5], pointRadius: 0, borderWidth: 1, fill: false }
-                    ]
-                },
-                options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, min: 0, max: 14 } } }
-            });
-        }
-
-        function updateCharts(data) {
-            const time = new Date(data.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const maxPoints = 20;
-
-            historyData.labels.push(time);
-            historyData.air.push(data.air_quality);
-            historyData.ph.push(data.ph);
-            historyData.tds.push(data.tds);
-
-            if (historyData.labels.length > maxPoints) {
-                historyData.labels.shift();
-                historyData.air.shift();
-                historyData.ph.shift();
-                historyData.tds.shift();
-            }
-
-            mainChart.data.labels = [...historyData.labels];
-            mainChart.data.datasets[0].data = [...historyData.air];
-            mainChart.data.datasets[1].data = [...historyData.tds];
-            mainChart.update('none');
-
-            waterChart.data.labels = [...historyData.labels];
-            waterChart.data.datasets[0].data = [...historyData.ph];
-            waterChart.data.datasets[1].data = historyData.labels.map(() => 7.5);
-            waterChart.update('none');
-        }
-
-        function updateDashboard(data) {
-            const airStatus = getAirStatus(data.air_quality);
-            const phStatus = getPHStatus(data.ph);
-            const tdsStatus = getTDSStatus(data.tds);
-
-            document.getElementById('gauge-cards').innerHTML = [
-                renderGaugeCard('Air Quality', Math.round(data.air_quality), 'AQI', airStatus, '🌬️', 500),
-                renderGaugeCard('pH Level', data.ph.toFixed(2), 'pH', phStatus, '💧', 14),
-                renderGaugeCard('TDS', Math.round(data.tds), 'ppm', tdsStatus, '🧪', 1000),
-                renderGaugeCard('Temperature', (25 + Math.random() * 10).toFixed(1), '°C', { label: 'Normal', color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-200' }, '🌡️', 60)
-            ].join('');
-
-            renderAlerts(data);
-            updateCharts(data);
-            dataCount++;
-            document.getElementById('dataPoints').textContent = dataCount;
-            document.getElementById('lastUpdate').textContent = 'Last updated: ' + new Date(data.timestamp).toLocaleString();
-        }
-
-        async function fetchData() {
-            if (CONFIG.demoMode) {
-                updateDashboard(generateDemoData());
-                return;
-            }
-            try {
-                const res = await fetch(`${CONFIG.firebaseURL}/sensor_data/${CONFIG.stationId}.json`);
-                const data = await res.json();
-                if (data) updateDashboard(data);
-            } catch (err) {
-                console.error('Fetch error:', err);
-                updateDashboard(generateDemoData());
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initCharts();
-            fetchData();
-            setInterval(fetchData, CONFIG.updateInterval);
+        mainChart = new Chart(document.getElementById('mainChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Air Quality (AQI)', data: [], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                { label: 'TDS (ppm)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }
+            ]},
+            options: commonOptions
         });
+
+        waterChart = new Chart(document.getElementById('waterChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'pH Level', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                { label: 'Safe pH Range (6.5-8.5)', data: [], borderColor: 'rgba(59,130,246,0.2)', borderDash: [5, 5], pointRadius: 0, borderWidth: 1, fill: false }
+            ]},
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, min: 0, max: 14 } } }
+        });
+    }
+
+    function updateCharts(data) {
+        const time = new Date(data.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        historyData.labels.push(time);
+        historyData.air.push(data.air_quality);
+        historyData.ph.push(data.ph);
+        historyData.tds.push(data.tds);
+        if (historyData.labels.length > 20) { historyData.labels.shift(); historyData.air.shift(); historyData.ph.shift(); historyData.tds.shift(); }
+        mainChart.data.labels = [...historyData.labels];
+        mainChart.data.datasets[0].data = [...historyData.air];
+        mainChart.data.datasets[1].data = [...historyData.tds];
+        mainChart.update('none');
+        waterChart.data.labels = [...historyData.labels];
+        waterChart.data.datasets[0].data = [...historyData.ph];
+        waterChart.data.datasets[1].data = historyData.labels.map(() => 7.5);
+        waterChart.update('none');
+    }
+
+    function updateDashboard(data) {
+        document.getElementById('gauge-cards').innerHTML = [
+            renderGaugeCard('Air Quality', Math.round(data.air_quality), 'AQI', getAirStatus(data.air_quality), '🌬️', 500),
+            renderGaugeCard('pH Level', data.ph.toFixed(2), 'pH', getPHStatus(data.ph), '💧', 14),
+            renderGaugeCard('TDS', Math.round(data.tds), 'ppm', getTDSStatus(data.tds), '🧪', 1000),
+            renderGaugeCard('Temperature', (25 + Math.random() * 10).toFixed(1), '°C', { label: 'Normal', color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-200' }, '🌡️', 60)
+        ].join('');
+        renderAlerts(data);
+        updateCharts(data);
+        dataCount++;
+        document.getElementById('dataPoints').textContent = dataCount;
+        document.getElementById('lastUpdate').textContent = 'Last updated: ' + new Date(data.timestamp).toLocaleString();
+    }
+
+    async function fetchData() {
+        if (CONFIG.demoMode) { updateDashboard(generateDemoData()); return; }
+        try {
+            const res = await fetch(`${CONFIG.firebaseURL}/sensor_data/${CONFIG.stationId}.json`);
+            const data = await res.json();
+            if (data) updateDashboard(data);
+        } catch (err) { updateDashboard(generateDemoData()); }
+    }
+
+    // =====================================================================
+    // WEATHER LOOKUP
+    // =====================================================================
+    const WEATHER_API = '34ee8ada1202533e9bd83d12959fc674';
+    let pollutantChart = null;
+
+    const REGION_WATER_DATA = {
+        'delhi': { ph: 7.2, tds: 320, do: 6.5, turbidity: 3.2 }, 'mumbai': { ph: 7.5, tds: 280, do: 5.8, turbidity: 2.8 },
+        'bangalore': { ph: 7.0, tds: 180, do: 7.2, turbidity: 1.5 }, 'chennai': { ph: 7.8, tds: 450, do: 4.5, turbidity: 4.1 },
+        'kolkata': { ph: 7.4, tds: 380, do: 5.2, turbidity: 3.8 }, 'hyderabad': { ph: 7.3, tds: 350, do: 6.0, turbidity: 2.9 },
+        'ahmedabad': { ph: 7.6, tds: 420, do: 5.5, turbidity: 3.5 }, 'pune': { ph: 7.1, tds: 200, do: 7.0, turbidity: 1.8 },
+        'jaipur': { ph: 7.8, tds: 480, do: 5.0, turbidity: 3.9 }, 'lucknow': { ph: 7.5, tds: 400, do: 4.8, turbidity: 4.2 },
+        'varanasi': { ph: 7.3, tds: 350, do: 5.5, turbidity: 3.5 }, 'kanpur': { ph: 7.2, tds: 420, do: 4.2, turbidity: 4.5 },
+        'patna': { ph: 7.4, tds: 380, do: 5.0, turbidity: 3.8 }, 'bhopal': { ph: 7.0, tds: 220, do: 6.8, turbidity: 2.0 },
+        'chandigarh': { ph: 7.1, tds: 180, do: 7.5, turbidity: 1.2 }, 'guwahati': { ph: 6.8, tds: 150, do: 7.8, turbidity: 2.5 },
+        'indore': { ph: 7.2, tds: 260, do: 6.2, turbidity: 2.3 }, 'nagpur': { ph: 7.3, tds: 300, do: 6.0, turbidity: 2.7 },
+        'coimbatore': { ph: 7.0, tds: 190, do: 7.0, turbidity: 1.6 }, 'kochi': { ph: 7.1, tds: 210, do: 6.5, turbidity: 2.0 }
+    };
+    const DEFAULT_WATER = { ph: 7.2, tds: 300, do: 6.0, turbidity: 3.0 };
+
+    function showWeatherError(msg) {
+        const el = document.getElementById('searchError');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
+
+    function hideWeatherError() { document.getElementById('searchError').classList.add('hidden'); }
+
+    async function searchLocation() {
+        const query = document.getElementById('searchInput').value.trim();
+        if (!query) { showWeatherError('Please enter a city name'); return; }
+        hideWeatherError();
+        await fetchWeatherData(query);
+    }
+
+    function searchMyLocation() {
+        hideWeatherError();
+        if (!navigator.geolocation) { showWeatherError('Geolocation not supported'); return; }
+        document.getElementById('weatherLoading').classList.remove('hidden');
+        document.getElementById('weatherResults').classList.add('hidden');
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => { await fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude); },
+            () => { document.getElementById('weatherLoading').classList.add('hidden'); showWeatherError('Location access denied. Search manually.'); }
+        );
+    }
+
+    async function fetchWeatherData(city) {
+        document.getElementById('weatherLoading').classList.remove('hidden');
+        document.getElementById('weatherResults').classList.add('hidden');
+        try {
+            const wRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${WEATHER_API}&units=metric`);
+            if (!wRes.ok) throw new Error('City not found. Check spelling.');
+            const w = await wRes.json();
+            const aRes = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${w.coord.lat}&lon=${w.coord.lon}&appid=${WEATHER_API}`);
+            const a = await aRes.json();
+            displayWeatherResults(w, a);
+        } catch (err) { document.getElementById('weatherLoading').classList.add('hidden'); showWeatherError(err.message); }
+    }
+
+    async function fetchWeatherByCoords(lat, lon) {
+        try {
+            const wRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API}&units=metric`);
+            const w = await wRes.json();
+            const aRes = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${WEATHER_API}`);
+            const a = await aRes.json();
+            document.getElementById('searchInput').value = w.name;
+            displayWeatherResults(w, a);
+        } catch (err) { document.getElementById('weatherLoading').classList.add('hidden'); showWeatherError('Failed to fetch location data'); }
+    }
+
+    function displayWeatherResults(w, a) {
+        document.getElementById('weatherLoading').classList.add('hidden');
+        document.getElementById('weatherResults').classList.remove('hidden');
+
+        document.getElementById('locationName').textContent = w.name;
+        document.getElementById('countryName').textContent = `Country: ${w.sys.country}`;
+        const lt = new Date((w.dt + w.timezone) * 1000);
+        document.getElementById('localTime').textContent = `Local: ${lt.toLocaleTimeString()}`;
+        document.getElementById('coordinates').textContent = `${w.coord.lat.toFixed(4)}N, ${w.coord.lon.toFixed(4)}E`;
+
+        document.getElementById('temperature').textContent = `${Math.round(w.main.temp)}°C`;
+        document.getElementById('feelsLike').textContent = `${Math.round(w.main.feels_like)}°C`;
+        document.getElementById('humidity').textContent = `${w.main.humidity}%`;
+        document.getElementById('windSpeed').textContent = `${(w.wind.speed * 3.6).toFixed(1)}`;
+        document.getElementById('pressure').textContent = `${w.main.pressure}`;
+        document.getElementById('visibility').textContent = `${(w.visibility / 1000).toFixed(1)}`;
+        document.getElementById('weatherIcon').src = `https://openweathermap.org/img/wn/${w.weather[0].icon}@2x.png`;
+        document.getElementById('weatherIcon').classList.remove('hidden');
+        document.getElementById('weatherDesc').textContent = `${w.weather[0].description.charAt(0).toUpperCase() + w.weather[0].description.slice(1)} in ${w.name}`;
+
+        const ad = a.list[0];
+        const aqiLabels = ['Good', 'Fair', 'Moderate', 'Poor', 'Very Poor'];
+        const aqiColors = ['bg-green-100 text-green-700', 'bg-blue-100 text-blue-700', 'bg-yellow-100 text-yellow-700', 'bg-orange-100 text-orange-700', 'bg-red-100 text-red-700'];
+        const ai = ad.main.aqi - 1;
+        document.getElementById('aqiBadge').textContent = `AQI: ${ad.main.aqi} - ${aqiLabels[ai]}`;
+        document.getElementById('aqiBadge').className = `px-3 py-1 rounded-full text-sm font-semibold ${aqiColors[ai]}`;
+
+        const pollutants = [
+            { name: 'PM2.5', value: ad.components.pm2_5, unit: 'μg/m³', limit: 25, icon: '🔴' },
+            { name: 'PM10', value: ad.components.pm10, unit: 'μg/m³', limit: 50, icon: '🟠' },
+            { name: 'CO', value: ad.components.co, unit: 'μg/m³', limit: 10000, icon: '⚫' },
+            { name: 'NO₂', value: ad.components.no2, unit: 'μg/m³', limit: 80, icon: '🟡' },
+            { name: 'SO₂', value: ad.components.so2, unit: 'μg/m³', limit: 80, icon: '🟣' },
+            { name: 'O₃', value: ad.components.o3, unit: 'μg/m³', limit: 100, icon: '🔵' }
+        ];
+
+        document.getElementById('aqiCards').innerHTML = pollutants.map(p => {
+            const pct = Math.min((p.value / p.limit) * 100, 100);
+            const bc = pct < 50 ? 'bg-green-500' : pct < 75 ? 'bg-yellow-500' : 'bg-red-500';
+            return `<div class="bg-slate-50 rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-2"><span>${p.icon}</span><span class="font-semibold text-gray-700 text-sm">${p.name}</span></div>
+                <p class="text-xl font-bold text-gray-900">${p.value.toFixed(1)}</p>
+                <p class="text-xs text-gray-500 mb-2">${p.unit}</p>
+                <div class="h-1.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full ${bc} rounded-full" style="width: ${pct}%"></div></div>
+            </div>`;
+        }).join('');
+
+        const wd = REGION_WATER_DATA[w.name.toLowerCase()] || DEFAULT_WATER;
+        document.getElementById('estPH').textContent = wd.ph.toFixed(1);
+        const phOk = wd.ph >= 6.5 && wd.ph <= 8.5;
+        document.getElementById('estPHStatus').textContent = phOk ? 'Safe' : 'Check';
+        document.getElementById('estPHStatus').className = `text-xs font-medium ${phOk ? 'text-green-600' : 'text-red-600'}`;
+
+        document.getElementById('estTDS').textContent = wd.tds;
+        const tdsOk = wd.tds <= 500;
+        document.getElementById('estTDSStatus').textContent = tdsOk ? 'Acceptable' : 'High';
+        document.getElementById('estTDSStatus').className = `text-xs font-medium ${tdsOk ? 'text-green-600' : 'text-red-600'}`;
+
+        document.getElementById('estDO').textContent = `${wd.do} mg/L`;
+        const doOk = wd.do >= 5;
+        document.getElementById('estDOStatus').textContent = doOk ? 'Healthy' : 'Low';
+        document.getElementById('estDOStatus').className = `text-xs font-medium ${doOk ? 'text-green-600' : 'text-red-600'}`;
+
+        document.getElementById('estTurbidity').textContent = `${wd.turbidity} NTU`;
+        const turbOk = wd.turbidity <= 5;
+        document.getElementById('estTurbidityStatus').textContent = turbOk ? 'Clear' : 'Turbid';
+        document.getElementById('estTurbidityStatus').className = `text-xs font-medium ${turbOk ? 'text-green-600' : 'text-red-600'}`;
+
+        if (pollutantChart) pollutantChart.destroy();
+        pollutantChart = new Chart(document.getElementById('pollutantChart'), {
+            type: 'bar',
+            data: {
+                labels: pollutants.map(p => p.name),
+                datasets: [
+                    { label: 'Current Level', data: pollutants.map(p => p.value), backgroundColor: ['#ef4444','#f97316','#6b7280','#eab308','#a855f7','#3b82f6'], borderRadius: 6, barThickness: 28 },
+                    { label: 'Safe Limit', data: pollutants.map(p => p.limit), backgroundColor: 'rgba(0,0,0,0.05)', borderColor: 'rgba(0,0,0,0.1)', borderWidth: 1, borderRadius: 6, barThickness: 28 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' }, type: 'logarithmic' } }
+            }
+        });
+
+        const advisories = [];
+        if (ad.main.aqi >= 4) advisories.push({ icon: '😷', title: 'Air Purifier Recommended', desc: 'Very poor air quality. Use air purifier indoors.', color: 'bg-red-50 border-red-200' });
+        else if (ad.main.aqi >= 3) advisories.push({ icon: '⚠️', title: 'Limit Outdoor Activity', desc: 'Moderate pollution. Sensitive groups reduce exertion.', color: 'bg-yellow-50 border-yellow-200' });
+        else advisories.push({ icon: '✅', title: 'Air Quality Safe', desc: 'Satisfactory. Outdoor activities safe for all.', color: 'bg-green-50 border-green-200' });
+
+        if (ad.components.pm2_5 > 25) advisories.push({ icon: '🔴', title: 'PM2.5 Alert', desc: `PM2.5 at ${ad.components.pm2_5.toFixed(1)} μg/m³. Wear N95 masks.`, color: 'bg-red-50 border-red-200' });
+        if (w.main.humidity > 80) advisories.push({ icon: '💧', title: 'High Humidity', desc: `${w.main.humidity}% humidity. Stay hydrated.`, color: 'bg-blue-50 border-blue-200' });
+        if (w.main.temp > 40) advisories.push({ icon: '🌡️', title: 'Heat Warning', desc: `${Math.round(w.main.temp)}°C. Avoid direct sun.`, color: 'bg-orange-50 border-orange-200' });
+        if (wd.tds > 400) advisories.push({ icon: '🚰', title: 'Water Filtration', desc: `TDS: ${wd.tds} ppm. Use RO purifier.`, color: 'bg-purple-50 border-purple-200' });
+        else advisories.push({ icon: '💧', title: 'Water Quality', desc: `TDS: ${wd.tds} ppm. Generally safe.`, color: 'bg-green-50 border-green-200' });
+
+        document.getElementById('healthAdvisory').innerHTML = advisories.map(a => `
+            <div class="${a.color} border rounded-xl p-4 fade-in">
+                <div class="flex items-center gap-2 mb-2"><span class="text-xl">${a.icon}</span><h4 class="font-semibold text-gray-800">${a.title}</h4></div>
+                <p class="text-sm text-gray-600">${a.desc}</p>
+            </div>`).join('');
+    }
+
+    // =====================================================================
+    // INIT
+    // =====================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        initCharts();
+        fetchData();
+        setInterval(fetchData, CONFIG.updateInterval);
+    });
     </script>
 </body>
 </html>
