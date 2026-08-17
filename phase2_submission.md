@@ -226,5 +226,3 @@ With continued development, SmartEnv has the potential to empower communities wi
 **GitHub:** https://github.com/mauryaanand416/SmartEnv-IoT-Monitor
 
 **Submission Date:** 27 August 2026
-
-**Deadline:** 27 August 2026, 11:59 PM IST

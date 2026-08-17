@@ -125,8 +125,4 @@ firebase deploy
 
 This project is open source and available under the MIT License.
 
-## Acknowledgments
 
-- Omnikon National Hackathon 2026
-- Unstop Platform
-- Firebase for free tier hosting
