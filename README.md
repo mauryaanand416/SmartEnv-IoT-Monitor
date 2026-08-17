@@ -2,6 +2,8 @@
 
 An affordable, scalable IoT solution for real-time environmental monitoring. Built for the Omnikon National Hackathon 2026 by Team Code-x.
 
+**Live Demo:** https://inquisitive-faun-e38fad.netlify.app
+
 ## Features
 
 - **Real-time Monitoring** - Live sensor data updates every 30 seconds
