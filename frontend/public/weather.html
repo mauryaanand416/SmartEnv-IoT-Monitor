@@ -246,7 +246,7 @@
         // CONFIG - Replace with your OpenWeatherMap API key
         // Get free key at: https://openweathermap.org/api
         // ==========================================
-        const API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY';
+        const API_KEY = '34ee8ada1202533e9bd83d12959fc674';
         let pollutantChart = null;
 
         // Regional water quality estimates (India-based data)
@@ -539,15 +539,7 @@
             `).join('');
         }
 
-        // Demo mode for when API key is not set
-        if (API_KEY === 'YOUR_OPENWEATHERMAP_API_KEY') {
-            document.addEventListener('DOMContentLoaded', () => {
-                const errEl = document.getElementById('searchError');
-                errEl.textContent = '⚠ Demo Mode: Replace YOUR_OPENWEATHERMAP_API_KEY in the source code with your free API key from openweathermap.org/api';
-                errEl.classList.remove('hidden');
-                errEl.className = 'mt-3 text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-2';
-            });
-        }
+        document.addEventListener('DOMContentLoaded', () => {});
     </script>
 </body>
 </html>
